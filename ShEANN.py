@@ -1,5 +1,5 @@
 from keras.models import Model, Sequential
-from keras.layers import Input, Concatenate, GRU, Dense, Reshape
+from keras.layers import Input, Concatenate, Conv1D, Dense, Reshape, Flatten
 from keras.optimizers import Adam
 from keras.backend import clear_session
 from pathlib import Path
@@ -19,6 +19,7 @@ hidden_layers = 4
 layer_neurons = 128
 learning_rate = 0.001
 nb_actions = 96
+conv_kernel = 5
 
 tf.get_logger().setLevel('ERROR')
 
@@ -59,27 +60,36 @@ while True:
         print(nnin[-1], end='', flush=True)
         env_reward -= length_penalty
     idxs = (np.frombuffer(nnin.encode(), dtype=np.uint8) - 32) / 100
-    env = tf.reshape(idxs, idxs.shape + (1,))
-    shape = env.shape
+    obs_now = tf.reshape(idxs, idxs.shape + (1,))
+    if obs_last is not None:
+        while obs_now.shape[0] > obs_last.shape[0]:
+            obs_last = np.append(obs_last, np.zeros((1, 1)), axis=0)
+        while obs_now.shape[0] < obs_last.shape[0]:
+            obs_now = np.append(obs_now, np.zeros((1, 1)), axis=0)
+    shape = obs_now.shape
 
 
     def build_actor_model(shape, nb_actions):
         model = Sequential()
         model.add(Reshape(shape[1::], input_shape=shape))
-        for layer in range(hidden_layers):
-            model.add(GRU(layer_neurons, name='GRU' + str(layer), return_sequences=True))
-        model.add(GRU(layer_neurons, name='GRU' + str(hidden_layers)))
+        model.add(Conv1D(layer_neurons, input_shape=shape, name='Conv1D1', kernel_size=conv_kernel, padding ='same'))
+        for layer in range(2, hidden_layers):
+            model.add(Conv1D(layer_neurons, name='Conv1D' + str(layer), kernel_size=conv_kernel, padding = 'same'))
+        model.add(Conv1D(layer_neurons, name='Conv1D' + str(hidden_layers), kernel_size=conv_kernel, padding ='same'))
+        model.add(Flatten())
         model.add(Dense(nb_actions, name='output', activation='softmax'))
         return model
 
 
-    def build_embed(shape, name_prefix='embed.'):
+    def build_embed(shape, name_prefix='main.'):
         inputs = Input(shape=shape)
         x = inputs
-        for layer in range(hidden_layers):
-            x = GRU(layer_neurons, name=name_prefix + ('GRU' + str(layer)), return_sequences=True)(x)
-        x = GRU(layer_neurons, name=name_prefix + ('GRU' + str(hidden_layers)))(x)
-        model = Model(inputs, x, name=name_prefix + 'embed')
+        x = Conv1D(layer_neurons, name=name_prefix + 'Conv1D1', kernel_size=conv_kernel, padding ='same')(x)
+        for layer in range(2, hidden_layers):
+            x = Conv1D(layer_neurons, name=name_prefix + ('Conv1D' + str(layer)), kernel_size=conv_kernel, padding ='same')(x)
+        x = Conv1D(layer_neurons, name=name_prefix + ('Conv1D' + str(hidden_layers)), kernel_size=conv_kernel, padding ='same')(x)
+        x = Flatten(name=name_prefix + 'flat')(x)
+        model = Model(inputs, x, name=name_prefix + 'main')
         return model
 
 
@@ -107,10 +117,8 @@ while True:
     embed2 = build_embed(shape, name_prefix='embed2.')
     inverse_model = build_inverse_model(embed, embed2, nb_actions)
     inverse_model.compile(Adam(learning_rate), loss='mse', metrics=['mse'])
-    inverse_model.input_spec = None
     forward_model = build_forward_model(embed, nb_actions)
     forward_model.compile(Adam(learning_rate), loss='mse', metrics=['mse'])
-    forward_model.input_spec = None
     model = build_actor_model((1,) + shape, nb_actions)
     policy = BoltzmannQPolicy()
     agent = SARSAAgent(model=model, nb_actions=nb_actions, policy=policy)
@@ -127,7 +135,6 @@ while True:
         initialize = False
     agent.training = True
 
-    obs_now = env
     if obs_last is None:
         obs_last = obs_now
     action = agent.forward(obs_now)
