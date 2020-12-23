@@ -15,18 +15,18 @@ env_reward = 0
 length_penalty = .25
 learning_reward = 10
 
-hidden_layers = 3
+hidden_layers = 4
 layer_neurons = 128
 learning_rate = 0.001
 nb_actions = 96
-conv_kernel = 5
+init_kernel = 5
+hidden_kernel= 1
 
 tf.get_logger().setLevel('ERROR')
 
 done = False
 cmd_in = True
 obs_last = None
-initialize = True
 
 while True:
     if cmd_in:
@@ -72,10 +72,10 @@ while True:
     def build_actor_model(shape, nb_actions):
         model = Sequential()
         model.add(Reshape(shape[1::], input_shape=shape))
-        model.add(Conv1D(layer_neurons, input_shape=shape, name='Conv1D1', kernel_size=conv_kernel, padding ='same'))
+        model.add(Conv1D(layer_neurons, input_shape=shape, name='Conv1D1', kernel_size=init_kernel))
         for layer in range(2, hidden_layers):
-            model.add(Conv1D(layer_neurons, name='Conv1D' + str(layer), kernel_size=conv_kernel, padding = 'same'))
-        model.add(Conv1D(layer_neurons, name='Conv1D' + str(hidden_layers), kernel_size=conv_kernel, padding ='same'))
+            model.add(Conv1D(layer_neurons, name='Conv1D' + str(layer), kernel_size=hidden_kernel))
+        model.add(Conv1D(layer_neurons, name='Conv1D' + str(hidden_layers), kernel_size=hidden_kernel))
         model.add(Flatten())
         model.add(Dense(nb_actions, name='output', activation='softmax'))
         return model
@@ -84,10 +84,10 @@ while True:
     def build_embed(shape, name_prefix='main.'):
         inputs = Input(shape=shape)
         x = inputs
-        x = Conv1D(layer_neurons, name=name_prefix + 'Conv1D1', kernel_size=conv_kernel, padding ='same')(x)
+        x = Conv1D(layer_neurons, name=name_prefix + 'Conv1D1', kernel_size=init_kernel )(x)
         for layer in range(2, hidden_layers):
-            x = Conv1D(layer_neurons, name=name_prefix + ('Conv1D' + str(layer)), kernel_size=conv_kernel, padding ='same')(x)
-        x = Conv1D(layer_neurons, name=name_prefix + ('Conv1D' + str(hidden_layers)), kernel_size=conv_kernel, padding ='same')(x)
+            x = Conv1D(layer_neurons, name=name_prefix + ('Conv1D' + str(layer)), kernel_size=hidden_kernel)(x)
+        x = Conv1D(layer_neurons, name=name_prefix + ('Conv1D' + str(hidden_layers)), kernel_size=hidden_kernel)(x)
         x = Flatten(name=name_prefix + 'flat')(x)
         model = Model(inputs, x, name=name_prefix + 'main')
         return model
@@ -125,14 +125,13 @@ while True:
     agent.compile(Adam(learning_rate), metrics=['mae'])
     agent.reset_states()
 
-    if initialize:
+    if cmd_in:
         if os.path.isfile(inv_weights_fname):
             inverse_model.load_weights(inv_weights_fname)
         if os.path.isfile(fwd_weights_fname):
             forward_model.load_weights(fwd_weights_fname)
         if os.path.isfile(agent_weights_fname):
             agent.load_weights(agent_weights_fname)
-        initialize = False
     agent.training = True
 
     if obs_last is None:
@@ -149,7 +148,6 @@ while True:
     r_intr = (fwd_loss[0] ** 0.5) / 100
     reward = r_intr + env_reward
     agent.backward(reward, done)
-    clear_session()
     done = False
 
     enc_ascii = action + 32
@@ -161,3 +159,4 @@ while True:
     inverse_model.save_weights(inv_weights_fname, overwrite=True)
     forward_model.save_weights(fwd_weights_fname, overwrite=True)
     agent.save_weights(agent_weights_fname, overwrite=True)
+    clear_session()
