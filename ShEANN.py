@@ -1,7 +1,6 @@
 from keras.models import Model, Sequential
 from keras.layers import Input, Concatenate, Conv1D, Dense, Reshape, Flatten
 from keras.optimizers import Adam
-from keras.backend import clear_session
 from pathlib import Path
 from subprocess import Popen, PIPE, STDOUT, TimeoutExpired
 import numpy as np
@@ -153,7 +152,6 @@ while True:
         forward_model.save_weights(fwd_weights_fname, overwrite=True)
         agent.save_weights(agent_weights_fname, overwrite=True)
         done = False
-    clear_session()
     
 
     enc_ascii = action + 32
