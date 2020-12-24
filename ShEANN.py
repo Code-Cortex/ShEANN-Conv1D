@@ -16,11 +16,11 @@ length_penalty = .25
 learning_reward = 10
 
 hidden_layers = 4
-layer_neurons = 128
+layer_neurons = 64
 learning_rate = 0.001
 nb_actions = 96
 init_kernel = 5
-hidden_kernel= 1
+hidden_kernel = 1
 
 tf.get_logger().setLevel('ERROR')
 
@@ -84,7 +84,7 @@ while True:
     def build_embed(shape, name_prefix='main.'):
         inputs = Input(shape=shape)
         x = inputs
-        x = Conv1D(layer_neurons, name=name_prefix + 'Conv1D1', kernel_size=init_kernel )(x)
+        x = Conv1D(layer_neurons, name=name_prefix + 'Conv1D1', kernel_size=init_kernel)(x)
         for layer in range(2, hidden_layers):
             x = Conv1D(layer_neurons, name=name_prefix + ('Conv1D' + str(layer)), kernel_size=hidden_kernel)(x)
         x = Conv1D(layer_neurons, name=name_prefix + ('Conv1D' + str(hidden_layers)), kernel_size=hidden_kernel)(x)
@@ -154,7 +154,7 @@ while True:
         agent.save_weights(agent_weights_fname, overwrite=True)
         done = False
     clear_session()
-    
+
 
     enc_ascii = action + 32
     if enc_ascii != 127:
