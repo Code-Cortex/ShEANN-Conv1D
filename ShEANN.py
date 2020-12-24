@@ -84,7 +84,7 @@ while True:
     def build_embed(shape, name_prefix='main.'):
         inputs = Input(shape=shape)
         x = inputs
-        x = Conv1D(layer_neurons, name=name_prefix + 'Conv1D1', kernel_size=init_kernel )(x)
+        x = Conv1D(layer_neurons, name=name_prefix + 'Conv1D1', kernel_size=init_kernel)(x)
         for layer in range(2, hidden_layers):
             x = Conv1D(layer_neurons, name=name_prefix + ('Conv1D' + str(layer)), kernel_size=hidden_kernel)(x)
         x = Conv1D(layer_neurons, name=name_prefix + ('Conv1D' + str(hidden_layers)), kernel_size=hidden_kernel)(x)
