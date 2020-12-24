@@ -16,7 +16,7 @@ length_penalty = .25
 learning_reward = 10
 
 hidden_layers = 4
-layer_neurons = 64
+layer_neurons = 32
 learning_rate = 0.001
 nb_actions = 96
 init_kernel = 5
