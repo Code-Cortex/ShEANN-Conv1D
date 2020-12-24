@@ -19,7 +19,7 @@ layer_neurons = 8
 learning_rate = 0.001
 nb_actions = 96
 init_kernel = 5
-hidden_kernel= 1
+hidden_kernel = 1
 
 tf.get_logger().setLevel('ERROR')
 
@@ -65,6 +65,8 @@ while True:
             obs_last = np.append(obs_last, np.zeros((1, 1)), axis=0)
         while obs_now.shape[0] < obs_last.shape[0]:
             obs_now = np.append(obs_now, np.zeros((1, 1)), axis=0)
+    else:
+        obs_last = obs_now
     shape = obs_now.shape
 
 
@@ -133,8 +135,7 @@ while True:
             agent.load_weights(agent_weights_fname)
     agent.training = True
 
-    if obs_last is None:
-        obs_last = obs_now
+
     action = agent.forward(obs_now)
     icm_action = np.zeros(nb_actions)
     icm_action[action] = 1
@@ -152,7 +153,6 @@ while True:
         forward_model.save_weights(fwd_weights_fname, overwrite=True)
         agent.save_weights(agent_weights_fname, overwrite=True)
         done = False
-    
 
     enc_ascii = action + 32
     if enc_ascii != 127:
