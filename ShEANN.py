@@ -66,6 +66,8 @@ while True:
             obs_last = np.append(obs_last, np.zeros((1, 1)), axis=0)
         while obs_now.shape[0] < obs_last.shape[0]:
             obs_now = np.append(obs_now, np.zeros((1, 1)), axis=0)
+     else:
+        obs_last = obs_now
     shape = obs_now.shape
 
 
@@ -134,8 +136,7 @@ while True:
             agent.load_weights(agent_weights_fname)
     agent.training = True
 
-    if obs_last is None:
-        obs_last = obs_now
+
     action = agent.forward(obs_now)
     icm_action = np.zeros(nb_actions)
     icm_action[action] = 1
