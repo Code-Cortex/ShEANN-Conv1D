@@ -15,7 +15,7 @@ env_reward = 0
 length_penalty = .25
 learning_reward = 10
 
-hidden_layers = 2
+hidden_layers = 8
 layer_neurons = 8
 learning_rate = 0.001
 nb_actions = 96
