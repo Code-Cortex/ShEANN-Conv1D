@@ -58,7 +58,7 @@ while True:
         nnin = cmd
         print(nnin[-1], end='', flush=True)
         env_reward -= length_penalty
-    idxs = (np.frombuffer(nnin.encode(), dtype=np.uint8) - 32) / 100
+    idxs = (np.frombuffer(nnin.encode(), dtype=np.uint8) - 31) / 100
     obs_now = tf.reshape(idxs, idxs.shape + (1,))
     if obs_last is not None:
         while obs_now.shape[0] > obs_last.shape[0]:
