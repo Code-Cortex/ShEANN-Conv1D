@@ -1,5 +1,6 @@
 from keras.models import Model, Sequential
 from keras.layers import Input, Concatenate, Conv1D, Dense, Reshape, Flatten
+from keras.backend import clear_session
 from keras.optimizers import Adam
 from pathlib import Path
 from subprocess import Popen, PIPE, STDOUT, TimeoutExpired
@@ -65,8 +66,6 @@ while True:
             obs_last = np.append(obs_last, np.zeros((1, 1)), axis=0)
         while obs_now.shape[0] < obs_last.shape[0]:
             obs_now = np.append(obs_now, np.zeros((1, 1)), axis=0)
-    else:
-        obs_last = obs_now
     shape = obs_now.shape
 
 
@@ -135,7 +134,8 @@ while True:
             agent.load_weights(agent_weights_fname)
     agent.training = True
 
-
+    if obs_last is None:
+        obs_last = obs_now
     action = agent.forward(obs_now)
     icm_action = np.zeros(nb_actions)
     icm_action[action] = 1
@@ -153,6 +153,7 @@ while True:
         forward_model.save_weights(fwd_weights_fname, overwrite=True)
         agent.save_weights(agent_weights_fname, overwrite=True)
         done = False
+    clear_session()
 
     enc_ascii = action + 32
     if enc_ascii != 127:
